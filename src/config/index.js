@@ -16,8 +16,10 @@ const envConfig = {
     mockApi: '',
   },
 };
+const namespace = 'FIRST_BLOOD';
 export default {
   env,
+  namespace,
   mock: true,
   ...envConfig[env],
 };

@@ -12,6 +12,7 @@
 <script>
   export default {
     name: '欢迎',
+    mounted() {},
     methods: {
       goLogin() {
         this.$router.push('/login');
