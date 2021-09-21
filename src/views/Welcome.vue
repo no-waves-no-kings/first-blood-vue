@@ -29,6 +29,7 @@
     justify-content: center;
     height: 100%;
     width: 100%;
+    background-color: #ffffff;
     .content {
       position: relative;
       bottom: 40px;

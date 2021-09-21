@@ -9,25 +9,13 @@
         <el-menu
           :collapse="isCollapse"
           :uniqueOpened="true"
-          default-active="1"
+          :default-active="activePath"
           background-color="#001529"
           text-color="#ffffff"
           router
           class="nav-menu"
         >
-          <el-sub-menu index="1">
-            <template #title>
-              <i class="el-icon-location"></i>
-              <span>系统管理</span>
-            </template>
-            <el-menu-item index="1-1">用户管理</el-menu-item>
-            <el-menu-item index="1-2">菜单管理</el-menu-item>
-            <el-menu-item index="1-3">部门管理</el-menu-item>
-          </el-sub-menu>
-          <el-menu-item index="2">
-            <i class="el-icon-menu"></i>
-            <template #title>审批管理</template>
-          </el-menu-item>
+          <tree-menu :menu-list="menuList" />
         </el-menu>
       </div>
     </div>
@@ -38,15 +26,11 @@
             <i class="el-icon-s-fold"></i>
           </div>
           <div>
-            <el-breadcrumb separator="/">
-              <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
-              <el-breadcrumb-item><a href="/">系统管理</a></el-breadcrumb-item>
-              <el-breadcrumb-item>欢迎</el-breadcrumb-item>
-            </el-breadcrumb>
+            <bread-crumb :current-routers="currentRoutes"></bread-crumb>
           </div>
         </div>
         <div class="user-info">
-          <el-badge is-dot class="notice"><i class="el-icon-bell"></i></el-badge>
+          <el-badge :is-dot="noticeCount > 0 ? true : false" class="notice"><i class="el-icon-bell"></i></el-badge>
           <el-dropdown @command="handleCommand">
             <span class="el-dropdown-link">俊阳<i class="el-icon-arrow-down el-icon--right"></i> </span>
             <template #dropdown>
@@ -59,27 +43,44 @@
         </div>
       </div>
       <div class="wrapper">
-        <div class="main-page">
-          <router-view></router-view>
-        </div>
+        <router-view></router-view>
       </div>
     </div>
   </div>
 </template>
 
 <script>
+  import TreeMenu from './Tree-Menu.vue';
+  import BreadCrumb from './BreadCrumb.vue';
   export default {
     name: '首页',
+    components: { BreadCrumb, TreeMenu },
     data() {
       return {
         isCollapse: false,
+        menuList: [],
+        noticeCount: 0,
+        activePath: this.$route.path,
       };
+    },
+    mounted() {
+      this.getMenuList();
+      this.getNoticeCount();
+      console.log(this.$route.matched);
     },
     methods: {
       onFold() {
         this.isCollapse = !this.isCollapse;
       },
       handleCommand(command) {},
+      async getMenuList() {
+        let menuList = await this.$api.getMenuList();
+        this.menuList = menuList;
+      },
+      async getNoticeCount() {
+        let noticeCount = await this.$api.getNoticeCount();
+        this.noticeCount = noticeCount;
+      },
     },
   };
 </script>
@@ -170,11 +171,6 @@
         padding: 20px;
         width: 100%;
         height: calc(100vh - 50px);
-        .main-page {
-          width: 100%;
-          height: 100%;
-          background-color: #ffffff;
-        }
       }
     }
   }
