@@ -12,4 +12,18 @@ export default {
       method: 'get',
     });
   },
+  getUserList(params) {
+    return request({
+      url: '/users/list',
+      method: 'get',
+      data: params,
+    });
+  },
+  deleteUser(params) {
+    return request({
+      url: '/users/delete',
+      method: 'post',
+      data: params,
+    });
+  },
 };

@@ -19,7 +19,7 @@
         </el-menu>
       </div>
     </div>
-    <div class="content-right">
+    <div :class="['content-right', isCollapse ? 'un-fold' : 'fold']">
       <div class="nav-top">
         <div class="bread">
           <div class="expand-btn" @click="onFold">
@@ -91,7 +91,7 @@
     display: flex;
     flex-direction: row;
     .nav-side {
-      //position: fixed;
+      position: fixed;
       width: 200px;
       height: 100vh;
       background-color: #001529;
@@ -166,11 +166,17 @@
           }
         }
       }
+      &.fold {
+        margin-left: 200px;
+      }
+      &.un-fold {
+        margin-left: 64px;
+      }
       .wrapper {
         background-color: #eef0f3;
         padding: 20px;
         width: 100%;
-        height: calc(100vh - 50px);
+        height: 100%;
       }
     }
   }
