@@ -56,13 +56,51 @@
       </el-pagination>
     </div>
     <div>
-      <el-dialog v-model="showModal" title="新增用户" center>
-        <el-form ref="addUserForm" :model="userForm">
-          <el-form-item label="用户名称" prop="userName">
-            <el-input v-model="userForm.name"></el-input>
+      <el-dialog v-model="showModal" :title="userForm.userId ? '用户编辑' : '用户新增'">
+        <el-form
+          ref="addUserForm"
+          :model="userForm"
+          :rules="rules"
+          label-position="right"
+          label-width="100px"
+          size="mini"
+        >
+          <el-input v-model="userForm.userId" type="hidden" />
+          <el-form-item label="用户名" prop="userName">
+            <el-input v-model="userForm.userName" placeholder="请输入用户名" />
           </el-form-item>
           <el-form-item label="用户邮箱" prop="userEmail">
-            <el-input v-model="userForm.userEmail"></el-input>
+            <el-input v-model="userForm.userEmail" placeholder="请输入用户邮箱">
+              <template #append>.com</template>
+            </el-input>
+          </el-form-item>
+          <el-form-item label="手机号" prop="userMobile">
+            <el-input v-model="userForm.userMobile" placeholder="请输入用户邮箱" />
+          </el-form-item>
+          <el-form-item label="工作状态" prop="state">
+            <el-select v-model="userForm.state" placeholder="请输入工作状态">
+              <el-option :value="1" label="在职"></el-option>
+              <el-option :value="2" label="离职"></el-option>
+              <el-option :value="3" label="试用期"></el-option>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="岗位" prop="job"
+            ><el-input v-model="userForm.job" placeholder="请输入岗位"
+          /></el-form-item>
+          <el-form-item label="系统角色" prop="roleList">
+            <el-select v-model="userForm.roleList" multiple placeholder="请输入系统角色" style="width: 100%">
+              <el-option v-for="role in roles" :key="role._id" :label="role.roleName" :value="role._id"></el-option>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="部门" prop="deptId">
+            <el-cascader
+              v-model="userForm.deptId"
+              placeholder="请选择部门"
+              :options="deptList"
+              :props="{ checkStrictly: true, label: 'deptName', value: '_id' }"
+              clearable
+              style="width: 100%"
+            />
           </el-form-item>
         </el-form>
         <template #footer>
@@ -77,25 +115,156 @@
 </template>
 
 <script>
-  import { ref, reactive, getCurrentInstance, onMounted } from 'vue';
+  import { reactive, toRefs, getCurrentInstance, onMounted } from 'vue';
   export default {
     name: 'User',
     setup() {
+      // 上下文代理对象
       const { proxy } = getCurrentInstance();
-      const columns = ref([]);
-      const users = ref([]);
-      const user = reactive({
-        state: 1,
+      // 用户查询模块
+      const userQuery = reactive({
+        user: { state: 1 },
+        handleQuery() {
+          userQuery.getUserList();
+        },
+        handleReset() {
+          proxy.$refs['form'].resetFields();
+        },
+        async getUserList() {
+          let { list, page } = await proxy.$api.getUserList({
+            ...userQuery.user,
+            ...userTable.pager,
+          });
+          userTable.users = list;
+          userTable.pager.total = page.total;
+        },
       });
-      const userForm = reactive({});
-      const checkedUserIds = ref([]);
-      const showModal = ref(false);
-      let pager = reactive({
-        pageNum: 1,
-        pageSize: 10,
-        total: 0,
+      // 用户列表模块
+      const userTable = reactive({
+        columns: [],
+        users: [],
+        checkedUserIds: [],
+        pager: { pageNum: 1, pageSize: 10, total: 0 },
+        onSelectionChange(selection) {
+          let map = selection.map((user) => user.userId);
+          userTable.checkedUserIds = map;
+        },
+        handleCurrentChange(curPage) {
+          userTable.pager.pageNum = curPage;
+          userTable.getUserList();
+        },
+        async handleEdit(row) {
+          let user = await proxy.$api.getUserById(row.userId);
+          userModal.userForm = user;
+        },
+        handleDelete(row) {
+          proxy
+            .$confirm('此操作将永久删除用户, 是否继续?', '提示', {
+              confirmButtonText: '确定',
+              cancelButtonText: '取消',
+              type: 'warning',
+            })
+            .then(async () => {
+              try {
+                await proxy.$api.deleteUser({
+                  userIds: [row.userId],
+                });
+                await userQuery.getUserList();
+                proxy.$message({ type: 'success', message: '删除成功!' });
+              } catch (e) {
+                proxy.$message({ type: 'error', message: '删除失败!' });
+              }
+            });
+        },
+        async handlePatchDelete() {
+          if (userTable.checkedUserIds.length <= 0) {
+            proxy.$message({ type: 'error', message: '请选择删除的用户!' });
+            return;
+          }
+          try {
+            let res = await proxy.$api.deleteUser({
+              userIds: userTable.checkedUserIds,
+            });
+            if (res.nModified > 0) {
+              proxy.$message({ type: 'success', message: '删除成功!' });
+              userQuery.getUserList();
+            } else {
+              proxy.$message({ type: 'error', message: '删除失败!' });
+            }
+          } catch (e) {
+            proxy.$message({ type: 'error', message: '删除失败!' });
+          }
+        },
       });
-      columns.value = [
+      // 用户form模块
+      const userModal = reactive({
+        showModal: false,
+        userForm: { state: 3 },
+        roles: [],
+        rules: {
+          userName: [
+            {
+              required: true,
+              message: '请输入用户名',
+              trigger: 'blur',
+            },
+            {
+              min: 4,
+              max: 32,
+              message: '请输入4-32的用户名',
+              trigger: 'blur',
+            },
+          ],
+          userEmail: [
+            {
+              required: true,
+              message: '请输入邮箱',
+              trigger: 'blur',
+            },
+            {
+              pattern: /^([0-9A-Za-z\-_\.]+)@([0-9a-z]+\.[a-z]{2,3}(\.[a-z]{2})?)$/g,
+              message: '请输入正确的邮箱',
+              trigger: 'blur',
+            },
+          ],
+          userMobile: [
+            { required: true, message: '请输入手机号', trigger: 'blur' },
+            {
+              pattern:
+                /(^[1-9]\d{5}(18|19|([23]\d))\d{2}((0[1-9])|(10|11|12))(([0-2][1-9])|10|20|30|31)\d{3}[0-9Xx]$)|(^[1-9]\d{5}\d{2}((0[1-9])|(10|11|12))(([0-2][1-9])|10|20|30|31)\d{2}$)/,
+              message: '请输入正确的手机号',
+              trigger: 'blur',
+            },
+          ],
+          depIds: [
+            {
+              required: true,
+              message: '请选择部门',
+              trigger: 'blur',
+            },
+          ],
+        },
+        deptList: [],
+        handleCreate() {
+          userModal.showModal = true;
+        },
+        handleCancel() {
+          proxy.$refs['addUserForm'].resetFields();
+          userModal.showModal = false;
+        },
+        handleSubmit() {
+          proxy.$refs['addUserForm'].resetFields();
+        },
+        async getRoleList() {
+          let { list } = await proxy.$api.getRoleList();
+          userModal.roles = list;
+        },
+        async getDeptList() {
+          let deptList = await proxy.$api.getDeptList();
+          userModal.deptList = deptList;
+        },
+      });
+      userTable.columns = [
         {
           prop: 'userId',
           label: '用户ID',
@@ -135,92 +304,14 @@
         },
       ];
       onMounted(() => {
-        getUserList();
+        userQuery.getUserList();
+        userModal.getRoleList();
+        userModal.getDeptList();
       });
-      const onSelectionChange = (selection) => {
-        let map = selection.map((user) => user.userId);
-        checkedUserIds.value = map;
-      };
-      const getUserList = async () => {
-        let { list, page } = await proxy.$api.getUserList({
-          ...user,
-          ...pager,
-        });
-        users.value = list;
-        pager.total = page.total;
-      };
-      const handleQuery = () => {
-        this.getUserList();
-      };
-      const handleReset = () => {
-        proxy.$refs['form'].resetFields();
-      };
-      const handleCurrentChange = (curPage) => {
-        pager.pageNum = curPage;
-        this.getUserList();
-      };
-      const handleDelete = (row) => {
-        proxy
-          .$confirm('此操作将永久删除用户, 是否继续?', '提示', {
-            confirmButtonText: '确定',
-            cancelButtonText: '取消',
-            type: 'warning',
-          })
-          .then(async () => {
-            try {
-              await proxy.$api.deleteUser({
-                userIds: [row.userId],
-              });
-              proxy.$message({ type: 'success', message: '删除成功!' });
-            } catch (e) {
-              proxy.$message({ type: 'error', message: '删除失败!' });
-            }
-          });
-      };
-      const handlePatchDelete = async () => {
-        if (checkedUserIds.value.length <= 0) {
-          proxy.$message({ type: 'error', message: '请选择删除的用户!' });
-        }
-        try {
-          let res = await proxy.$api.deleteUser({
-            userIds: checkedUserIds,
-          });
-          if (res.nModified > 0) {
-            proxy.$message({ type: 'success', message: '删除成功!' });
-          } else {
-            proxy.$message({ type: 'error', message: '删除失败!' });
-          }
-        } catch (e) {
-          proxy.$message({ type: 'error', message: '删除失败!' });
-        }
-      };
-      const handleCreate = () => {
-        showModal.value = true;
-      };
-      const handleCancel = () => {
-        showModal.value = false;
-      };
-      const handleSubmit = () => {
-        showModal.value = false;
-      };
       return {
-        user,
-        columns,
-        users,
-        getUserList,
-        pager,
-        handleQuery,
-        handleReset,
-        handleCurrentChange,
-        handleDelete,
-        handlePatchDelete,
-        onSelectionChange,
-        checkedUserIds,
-        showModal,
-        handleCreate,
-        userForm,
-        handleCancel,
-        handleSubmit,
+        ...toRefs(userQuery),
+        ...toRefs(userTable),
+        ...toRefs(userModal),
       };
     },
   };

@@ -19,11 +19,29 @@ export default {
       data: params,
     });
   },
+  getUserById(userId) {
+    return request({
+      url: `/user/:userId`,
+      method: 'get',
+    });
+  },
   deleteUser(params) {
     return request({
       url: '/users/delete',
       method: 'post',
       data: params,
+    });
+  },
+  getRoleList() {
+    return request({
+      url: '/roles/list',
+      method: 'get',
+    });
+  },
+  getDeptList() {
+    return request({
+      url: '/dept/list',
+      method: 'get',
     });
   },
 };
