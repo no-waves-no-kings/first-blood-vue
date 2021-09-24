@@ -18,7 +18,7 @@
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handleQuery">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
+          <el-button @click="handleReset('form')">重置</el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -40,7 +40,7 @@
         </el-table-column>
         <el-table-column label="操作" width="150">
           <template #default="scope">
-            <el-button size="mini" @click="handleEdit(scope.$index, scope.row)">编辑</el-button>
+            <el-button size="mini" @click="handleEdit(scope.row)">编辑</el-button>
             <el-button size="mini" type="danger" @click="handleDelete(scope.row)">删除</el-button>
           </template>
         </el-table-column>
@@ -56,7 +56,7 @@
       </el-pagination>
     </div>
     <div>
-      <el-dialog v-model="showModal" :title="userForm.userId ? '用户编辑' : '用户新增'">
+      <el-dialog v-model="showModal" :title="userForm.userId ? '用户编辑' : '用户新增'" @close="handleCancel">
         <el-form
           ref="addUserForm"
           :model="userForm"
@@ -67,10 +67,10 @@
         >
           <el-input v-model="userForm.userId" type="hidden" />
           <el-form-item label="用户名" prop="userName">
-            <el-input v-model="userForm.userName" placeholder="请输入用户名" />
+            <el-input v-model="userForm.userName" :disabled="userForm.userId" placeholder="请输入用户名" />
           </el-form-item>
           <el-form-item label="用户邮箱" prop="userEmail">
-            <el-input v-model="userForm.userEmail" placeholder="请输入用户邮箱">
+            <el-input v-model="userForm.userEmail" :disabled="userForm.userId" placeholder="请输入用户邮箱">
               <template #append>.com</template>
             </el-input>
           </el-form-item>
@@ -127,9 +127,6 @@
         handleQuery() {
           userQuery.getUserList();
         },
-        handleReset() {
-          proxy.$refs['form'].resetFields();
-        },
         async getUserList() {
           let { list, page } = await proxy.$api.getUserList({
             ...userQuery.user,
@@ -154,8 +151,11 @@
           userTable.getUserList();
         },
         async handleEdit(row) {
-          let user = await proxy.$api.getUserById(row.userId);
-          userModal.userForm = user;
+          // let user = await proxy.$api.getUserById(row.userId);
+          proxy.$nextTick(() => {
+            Object.assign(userModal.userForm, row);
+          });
+          userModal.showModal = true;
         },
         handleDelete(row) {
           proxy
@@ -187,7 +187,7 @@
             });
             if (res.nModified > 0) {
               proxy.$message({ type: 'success', message: '删除成功!' });
-              userQuery.getUserList();
+              await userQuery.getUserList();
             } else {
               proxy.$message({ type: 'error', message: '删除失败!' });
             }
@@ -222,7 +222,7 @@
               trigger: 'blur',
             },
             {
-              pattern: /^([0-9A-Za-z\-_\.]+)@([0-9a-z]+\.[a-z]{2,3}(\.[a-z]{2})?)$/g,
+              pattern: /^([0-9A-Za-z\-_\.]+)@([0-9a-z]+\.[a-z]{2,3}?)$/g,
               message: '请输入正确的邮箱',
               trigger: 'blur',
             },
@@ -230,8 +230,7 @@
           userMobile: [
             { required: true, message: '请输入手机号', trigger: 'blur' },
             {
-              pattern:
-                /(^[1-9]\d{5}(18|19|([23]\d))\d{2}((0[1-9])|(10|11|12))(([0-2][1-9])|10|20|30|31)\d{3}[0-9Xx]$)|(^[1-9]\d{5}\d{2}((0[1-9])|(10|11|12))(([0-2][1-9])|10|20|30|31)\d{2}$)/,
+              pattern: /^(13[0-9]|14[01456879]|15[0-35-9]|16[2567]|17[0-8]|18[0-9]|19[0-35-9])\d{8}$/,
               message: '请输入正确的手机号',
               trigger: 'blur',
             },
@@ -249,21 +248,37 @@
           userModal.showModal = true;
         },
         handleCancel() {
-          proxy.$refs['addUserForm'].resetFields();
+          handleReset('addUserForm');
+          userModal.userForm = {};
           userModal.showModal = false;
         },
         handleSubmit() {
-          proxy.$refs['addUserForm'].resetFields();
+          proxy.$refs['addUserForm'].validate(async (valid) => {
+            if (valid) {
+              try {
+                await proxy.$api.saveUser(userModal.userForm);
+                userModal.showModal = false;
+                handleReset('addUserForm');
+                proxy.$message({ type: 'success', message: '用户创建成功!' });
+                await userQuery.getUserList();
+              } catch (e) {
+                proxy.$message({ type: 'error', message: '用户创建失败!' });
+              }
+            }
+          });
         },
         async getRoleList() {
-          let { list } = await proxy.$api.getRoleList();
-          userModal.roles = list;
+          let roleList = await proxy.$api.getRoleList();
+          userModal.roles = roleList;
         },
         async getDeptList() {
           let deptList = await proxy.$api.getDeptList();
           userModal.deptList = deptList;
         },
       });
+      const handleReset = (form) => {
+        proxy.$refs[form].resetFields();
+      };
       userTable.columns = [
         {
           prop: 'userId',
@@ -312,6 +327,7 @@
         ...toRefs(userQuery),
         ...toRefs(userTable),
         ...toRefs(userModal),
+        handleReset,
       };
     },
   };

@@ -1,9 +1,10 @@
 import request from '../utils/http';
 export default {
-  getMenuList() {
+  getMenuList(menu) {
     return request({
       url: '/menu/list',
       method: 'get',
+      data: menu,
     });
   },
   getNoticeCount() {
@@ -25,6 +26,13 @@ export default {
       method: 'get',
     });
   },
+  saveUser(user) {
+    return request({
+      url: '/user/save',
+      method: 'post',
+      data: user,
+    });
+  },
   deleteUser(params) {
     return request({
       url: '/users/delete',
@@ -34,7 +42,7 @@ export default {
   },
   getRoleList() {
     return request({
-      url: '/roles/list',
+      url: '/roles/alllist',
       method: 'get',
     });
   },
