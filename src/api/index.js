@@ -7,6 +7,20 @@ export default {
       data: menu,
     });
   },
+  saveMenu(menu) {
+    return request({
+      url: '/menu/save',
+      method: 'post',
+      data: menu,
+    });
+  },
+  deleteMenu(param) {
+    return request({
+      url: '/menu/delete',
+      method: 'delete',
+      data: param,
+    });
+  },
   getNoticeCount() {
     return request({
       url: '/leave/count',
@@ -40,10 +54,38 @@ export default {
       data: params,
     });
   },
-  getRoleList() {
+  getAllRoleList() {
     return request({
       url: '/roles/alllist',
       method: 'get',
+    });
+  },
+  getRoleList(params) {
+    return request({
+      url: '/roles/list',
+      method: 'get',
+      data: params,
+    });
+  },
+  saveRole(params) {
+    return request({
+      url: '/role/save',
+      method: 'post',
+      data: params,
+    });
+  },
+  deleteRole(params) {
+    return request({
+      url: '/role/delete',
+      method: 'post',
+      data: params,
+    });
+  },
+  updateRolePermission(params) {
+    return request({
+      url: '/role/permission',
+      method: 'post',
+      data: params,
     });
   },
   getDeptList() {

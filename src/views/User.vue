@@ -267,8 +267,8 @@
             }
           });
         },
-        async getRoleList() {
-          let roleList = await proxy.$api.getRoleList();
+        async getAllRoleList() {
+          let roleList = await proxy.$api.getAllRoleList();
           userModal.roles = roleList;
         },
         async getDeptList() {
@@ -320,7 +320,7 @@
       ];
       onMounted(() => {
         userQuery.getUserList();
-        userModal.getRoleList();
+        userModal.getAllRoleList();
         userModal.getDeptList();
       });
       return {
