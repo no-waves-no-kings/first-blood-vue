@@ -94,6 +94,7 @@
 
 <script>
   import { reactive, getCurrentInstance, toRefs, onMounted } from 'vue';
+  import { getBarYMDHMS } from '@/utils/date';
 
   export default {
     name: 'Role',
@@ -139,6 +140,9 @@
           {
             prop: 'createTime',
             label: '创建时间',
+            formatter(row, column, value) {
+              return getBarYMDHMS(value);
+            },
           },
         ],
         handleCreate() {

@@ -109,6 +109,7 @@
 </template>
 <script>
   import { reactive, toRefs, getCurrentInstance, onMounted } from 'vue';
+  import { getBarYMDHMS } from '@/utils/date';
   export default {
     name: 'Menus',
     setup() {
@@ -166,6 +167,9 @@
           {
             prop: 'createTime',
             label: '创建时间',
+            formatter(row, column, value) {
+              return getBarYMDHMS(value);
+            },
           },
         ],
         handleCreate() {

@@ -1,23 +1,57 @@
 <template>
   <div class="login-wrapper">
     <div class="model">
-      <el-form>
+      <el-form ref="loginForm" :model="user" :rules="rules" status-icon>
         <div class="title">first-blood</div>
-        <el-form-item>
-          <el-input type="text" placeholder="请输入姓名" prefix-icon="el-icon-user" />
+        <el-form-item prop="userName">
+          <el-input v-model="user.userName" type="text" placeholder="请输入姓名" prefix-icon="el-icon-user" />
         </el-form-item>
         <el-form-item>
-          <el-input type="password" placeholder="请输入密码" prefix-icon="el-icon-lock" />
+          <el-input v-model="user.userPwd" type="password" placeholder="请输入密码" prefix-icon="el-icon-lock" />
         </el-form-item>
         <el-form-item>
-          <el-button class="btn" type="primary">登录</el-button>
+          <el-button class="btn" type="primary" @click="login">登录</el-button>
         </el-form-item>
       </el-form>
     </div>
   </div>
 </template>
 
-<script setup></script>
+<script setup>
+  import { getCurrentInstance, reactive, ref } from 'vue';
+  const { proxy } = getCurrentInstance();
+
+  const user = reactive({
+    userName: '',
+    userPwd: '',
+  });
+  const rules = ref({
+    userName: [
+      {
+        required: true,
+        message: '请输入姓名',
+        trigger: 'blur',
+      },
+    ],
+    userPwd: [
+      {
+        required: true,
+        message: '请输入密码',
+        trigger: 'blur',
+      },
+    ],
+  });
+  const login = () => {
+    proxy.$refs.loginForm.validate(async (valid) => {
+      if (valid) {
+        let loginUser = await proxy.$api.userLogin(user);
+        proxy.$message.success('登录成功');
+        proxy.$store.commit('saveUserInfo', loginUser);
+        proxy.$router.push('/');
+      }
+    });
+  };
+</script>
 
 <style lang="scss">
   .login-wrapper {

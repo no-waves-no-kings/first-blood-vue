@@ -34,6 +34,14 @@ export default {
       data: params,
     });
   },
+  userLogin(params) {
+    return request({
+      url: '/users/login',
+      method: 'post',
+      data: params,
+      mock: false,
+    });
+  },
   getUserById(userId) {
     return request({
       url: `/user/:userId`,

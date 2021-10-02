@@ -42,6 +42,14 @@ const routes = [
           title: '菜单管理',
         },
       },
+      {
+        name: 'dept',
+        path: '/system/dept',
+        component: () => import('@/views/Dept.vue'),
+        meta: {
+          title: '部门管理',
+        },
+      },
     ],
   },
   {

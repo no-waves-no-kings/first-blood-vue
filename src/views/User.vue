@@ -35,7 +35,7 @@
           :width="column.width"
           :prop="column.prop"
           :label="column.label"
-          :formatter="column.fomatter"
+          :formatter="column.formatter"
         >
         </el-table-column>
         <el-table-column label="操作" width="150">
@@ -116,6 +116,7 @@
 
 <script>
   import { reactive, toRefs, getCurrentInstance, onMounted } from 'vue';
+  import { getBarYMDHMS } from '@/utils/date';
   export default {
     name: 'User',
     setup() {
@@ -291,7 +292,7 @@
         {
           prop: 'role',
           label: '角色',
-          fomatter(row, column, value) {
+          formatter(row, column, value) {
             return {
               0: '管理员',
               1: '普通用户',
@@ -301,7 +302,7 @@
         {
           prop: 'state',
           label: '在职状态',
-          fomatter(row, column, value) {
+          formatter(row, column, value) {
             return {
               1: '在职',
               2: '离职',
@@ -312,10 +313,18 @@
         {
           prop: 'createTime',
           label: '创建时间',
+          // width: 150,
+          formatter(row, column, value) {
+            return getBarYMDHMS(value);
+          },
         },
         {
           prop: 'lastLoginTime',
           label: '上次登录时间',
+          // width: 150,
+          formatter(row, column, value) {
+            return getBarYMDHMS(value);
+          },
         },
       ];
       onMounted(() => {

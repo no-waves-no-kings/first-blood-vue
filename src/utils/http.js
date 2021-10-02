@@ -55,10 +55,14 @@ const request = (options) => {
   if (options.method.toLowerCase() === 'get') {
     options.params = options.data;
   }
+  let mock = EnvConfig.mock;
+  if (typeof options.mock != 'undefined') {
+    mock = options.mock;
+  }
   if (EnvConfig.env.toLowerCase() === 'prod') {
     service.defaults.baseURL = EnvConfig.baseApi;
   } else {
-    service.defaults.baseURL = EnvConfig.mock ? EnvConfig.mockApi : EnvConfig.baseApi;
+    service.defaults.baseURL = mock ? EnvConfig.mockApi : EnvConfig.baseApi;
   }
   return service(options);
 };

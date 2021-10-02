@@ -9,8 +9,8 @@ import api from '@/api';
 
 const app = createApp(App);
 app.config.globalProperties.$request = request;
-app.config.globalProperties.$store = store;
 app.config.globalProperties.$api = api;
 app.use(ElementPlus, { size: 'small' });
 app.use(router);
+app.use(store);
 app.mount('#app');
