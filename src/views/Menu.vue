@@ -17,9 +17,9 @@
     </div>
     <div class="base-table">
       <div class="action">
-        <el-button type="primary" @click="handleCreate">创建</el-button>
+        <el-button v-has="'menu-create'" type="primary" @click="handleCreate">创建</el-button>
       </div>
-      <el-table :data="menus" style="width: 100%" row-key="_id">
+      <el-table :data="menus" style="width: 100%; height: 100%" row-key="_id">
         <el-table-column
           v-for="column in columns"
           :key="column.prop"
@@ -28,19 +28,19 @@
           :label="column.label"
           :formatter="column.formatter"
         />
-        <el-table-column label="操作" width="220">
+        <el-table-column label="操作" width="210">
           <template #default="scope">
-            <el-button size="mini" @click="handleAdd(scope.row)">新增</el-button>
-            <el-button size="mini" type="primary" @click="handleEdit(scope.row)">编辑</el-button>
+            <el-button v-has="'menu-add'" size="mini" @click="handleAdd(scope.row)">新增</el-button>
+            <el-button v-has="'menu-edit'" size="mini" type="primary" @click="handleEdit(scope.row)">编辑</el-button>
             <el-popconfirm
               confirm-button-text="确定"
               cancel-button-text="取消"
               icon="el-icon-info"
               title="你确定删除此菜单?"
-              @confirm="handleDelete"
+              @confirm="handleDelete(scope.row)"
             >
               <template #reference>
-                <el-button size="mini" type="danger">删除</el-button>
+                <el-button v-has="'menu-delete'" size="mini" type="danger">删除</el-button>
               </template>
             </el-popconfirm>
           </template>
@@ -126,7 +126,7 @@
           {
             prop: 'menuName',
             label: '菜单名称',
-            width: 250,
+            width: '140',
           },
           {
             prop: 'icon',
@@ -135,6 +135,7 @@
           {
             prop: 'menuType',
             label: '菜单类型',
+            width: 70,
             formatter(row, column, value) {
               return {
                 1: '菜单',
@@ -157,6 +158,7 @@
           {
             prop: 'menuState',
             label: '菜单状态',
+            width: 70,
             formatter(row, column, value) {
               return {
                 1: '正常',
@@ -165,8 +167,9 @@
             },
           },
           {
-            prop: 'createTime',
+            prop: 'createdTime',
             label: '创建时间',
+            width: 140,
             formatter(row, column, value) {
               return getBarYMDHMS(value);
             },
@@ -211,6 +214,7 @@
           ],
         },
         menuForm: {
+          parentId: [null],
           menuState: 1,
           menuType: 1,
         },
@@ -226,9 +230,13 @@
           proxy.$refs['menuModal'].validate(async (vaild) => {
             if (vaild) {
               try {
-                await proxy.$api.saveMenu(menuModal.menuForm);
+                if (menuModal.menuForm._id) {
+                  await proxy.$api.updateMenu(menuModal.menuForm);
+                } else {
+                  await proxy.$api.saveMenu(menuModal.menuForm);
+                }
                 proxy.$message({ type: 'success', message: '保存菜单成功' });
-                handleReset('menuModal');
+                menuModal.handleCancel();
                 await _getMenuList();
               } catch (e) {
                 proxy.$message({ type: 'error', message: '保存菜单失败' });
@@ -260,4 +268,9 @@
   };
 </script>
 
-<style scoped></style>
+<style scoped>
+  .menu-manager {
+    width: 100%;
+    height: 100%;
+  }
+</style>

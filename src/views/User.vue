@@ -24,8 +24,9 @@
     </div>
     <div class="base-table">
       <div class="action">
-        <el-button type="primary" @click="handleCreate">新增</el-button>
-        <el-button type="danger" @click="handlePatchDelete">批量删除</el-button>
+        <el-button v-has="'user-add'" type="primary" @click="handleCreate">新增</el-button>
+        <el-button v-has="'user-export'" @click="handleExport">导出</el-button>
+        <el-button v-has="'user-patch-delete'" type="danger" @click="handlePatchDelete">批量删除</el-button>
       </div>
       <el-table :data="users" style="width: 100%; height: 100%" @selection-change="onSelectionChange">
         <el-table-column type="selection" width="55"></el-table-column>
@@ -40,8 +41,8 @@
         </el-table-column>
         <el-table-column label="操作" width="150">
           <template #default="scope">
-            <el-button size="mini" @click="handleEdit(scope.row)">编辑</el-button>
-            <el-button size="mini" type="danger" @click="handleDelete(scope.row)">删除</el-button>
+            <el-button v-has="'user-edit'" size="mini" @click="handleEdit(scope.row)">编辑</el-button>
+            <el-button v-has="'user-delete'" size="mini" type="danger" @click="handleDelete(scope.row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -117,6 +118,7 @@
 <script>
   import { reactive, toRefs, getCurrentInstance, onMounted } from 'vue';
   import { getBarYMDHMS } from '@/utils/date';
+  import Export from '@/utils/export';
   export default {
     name: 'User',
     setup() {
@@ -142,10 +144,12 @@
         columns: [],
         users: [],
         checkedUserIds: [],
+        checkedUser: [],
         pager: { pageNum: 1, pageSize: 10, total: 0 },
         onSelectionChange(selection) {
           let map = selection.map((user) => user.userId);
           userTable.checkedUserIds = map;
+          userTable.checkedUser = selection;
         },
         handleCurrentChange(curPage) {
           userTable.pager.pageNum = curPage;
@@ -186,7 +190,7 @@
             let res = await proxy.$api.deleteUser({
               userIds: userTable.checkedUserIds,
             });
-            if (res.nModified > 0) {
+            if (res.modifiedCount > 0) {
               proxy.$message({ type: 'success', message: '删除成功!' });
               await userQuery.getUserList();
             } else {
@@ -195,6 +199,28 @@
           } catch (e) {
             proxy.$message({ type: 'error', message: '删除失败!' });
           }
+        },
+        handleExport() {
+          if (userTable.checkedUser.length === 0) {
+            proxy.$message.error('请选择要导出的用户信息');
+            return;
+          }
+          let columnNames = [];
+          let columnValues = [];
+          userTable.columns.forEach((c) => {
+            columnNames.push(c.label);
+            columnValues.push(c.prop);
+          });
+          let map = userTable.users.map((u) =>
+            userTable.columns.map((c) => {
+              let value = u[c.prop];
+              if (c.formatter) {
+                value = c.formatter('', '', value);
+              }
+              return value;
+            }),
+          );
+          Export(map, columnNames, '用户数据');
         },
       });
       // 用户form模块
@@ -236,7 +262,7 @@
               trigger: 'blur',
             },
           ],
-          depIds: [
+          deptId: [
             {
               required: true,
               message: '请选择部门',
@@ -250,20 +276,24 @@
         },
         handleCancel() {
           handleReset('addUserForm');
-          userModal.userForm = {};
+          userModal.userForm = { state: 3 };
           userModal.showModal = false;
         },
         handleSubmit() {
           proxy.$refs['addUserForm'].validate(async (valid) => {
             if (valid) {
               try {
-                await proxy.$api.saveUser(userModal.userForm);
+                if (userModal.userForm.userId) {
+                  await proxy.$api.updateUser(userModal.userForm);
+                } else {
+                  await proxy.$api.saveUser(userModal.userForm);
+                }
                 userModal.showModal = false;
                 handleReset('addUserForm');
                 proxy.$message({ type: 'success', message: '用户创建成功!' });
                 await userQuery.getUserList();
               } catch (e) {
-                proxy.$message({ type: 'error', message: '用户创建失败!' });
+                proxy.$message.error(e);
               }
             }
           });
@@ -284,14 +314,17 @@
         {
           prop: 'userId',
           label: '用户ID',
+          width: 100,
         },
         {
           prop: 'userName',
           label: '用户名',
+          width: 100,
         },
         {
           prop: 'role',
           label: '角色',
+          width: 100,
           formatter(row, column, value) {
             return {
               0: '管理员',
@@ -302,6 +335,7 @@
         {
           prop: 'state',
           label: '在职状态',
+          width: 100,
           formatter(row, column, value) {
             return {
               1: '在职',
@@ -311,11 +345,11 @@
           },
         },
         {
-          prop: 'createTime',
+          prop: 'createdTime',
           label: '创建时间',
-          // width: 150,
+          width: 180,
           formatter(row, column, value) {
-            return getBarYMDHMS(value);
+            if (value) return getBarYMDHMS(value);
           },
         },
         {
@@ -323,7 +357,7 @@
           label: '上次登录时间',
           // width: 150,
           formatter(row, column, value) {
-            return getBarYMDHMS(value);
+            if (value) return getBarYMDHMS(value);
           },
         },
       ];

@@ -11,7 +11,7 @@
     </div>
     <div class="base-table">
       <div class="action">
-        <el-button type="primary" @click="handleCreate">创建</el-button>
+        <el-button v-has="'role-create'" type="primary" @click="handleCreate">创建</el-button>
       </div>
       <el-table :data="roles">
         <el-table-column
@@ -24,8 +24,10 @@
         ></el-table-column>
         <el-table-column label="操作" width="240">
           <template #default="scope">
-            <el-button size="mini" @click="handleEdit(scope.row)">编辑</el-button>
-            <el-button size="mini" type="primary" @click="handleOpenPermission(scope.row)">设置权限</el-button>
+            <el-button v-has="'role-edit'" size="mini" @click="handleEdit(scope.row)">编辑</el-button>
+            <el-button v-has="'role-permission'" size="mini" type="primary" @click="handleOpenPermission(scope.row)"
+              >设置权限</el-button
+            >
             <el-popconfirm
               confirm-button-text="确定"
               cancel-button-text="取消"
@@ -34,7 +36,7 @@
               @confirm="handleDelete(scope.row)"
             >
               <template #reference>
-                <el-button type="danger" size="mini">删除</el-button>
+                <el-button v-has="'role-delete'" type="danger" size="mini">删除</el-button>
               </template>
             </el-popconfirm>
           </template>
@@ -138,7 +140,7 @@
             },
           },
           {
-            prop: 'createTime',
+            prop: 'createdTime',
             label: '创建时间',
             formatter(row, column, value) {
               return getBarYMDHMS(value);
@@ -163,7 +165,7 @@
         },
         async handleDelete(row) {
           try {
-            await proxy.$api.deleteRole({ rowIds: [row._id] });
+            await proxy.$api.deleteRole({ roleIds: [row._id] });
             proxy.$message({
               type: 'success',
               message: '菜单删除成功',
@@ -202,8 +204,12 @@
           proxy.$refs['roleModal'].validate(async (valid) => {
             if (valid) {
               try {
-                await proxy.$api.saveRole(roleModal.roleForm);
-                handleReset('roleModal');
+                if (roleModal.roleForm._id) {
+                  await proxy.$api.updateRole(roleModal.roleForm);
+                } else {
+                  await proxy.$api.saveRole(roleModal.roleForm);
+                }
+                roleModal.handleCancel();
                 await _getRoleList();
                 proxy.$message({
                   type: 'success',

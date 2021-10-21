@@ -19,6 +19,8 @@
 
 <script setup>
   import { getCurrentInstance, reactive, ref } from 'vue';
+  import Utils from '@/utils/utils';
+  import Storage from '../utils/storage';
   const { proxy } = getCurrentInstance();
 
   const user = reactive({
@@ -44,12 +46,35 @@
   const login = () => {
     proxy.$refs.loginForm.validate(async (valid) => {
       if (valid) {
-        let loginUser = await proxy.$api.userLogin(user);
-        proxy.$message.success('登录成功');
-        proxy.$store.commit('saveUserInfo', loginUser);
-        proxy.$router.push('/');
+        try {
+          let loginUser = await proxy.$api.userLogin(user);
+          proxy.$message.success('登录成功');
+          proxy.$store.commit('saveUserInfo', loginUser);
+          await ayncLoadRoutes();
+          proxy.$router.push('/');
+        } catch (e) {
+          console.log(e);
+          proxy.$message.error(e);
+        }
       }
     });
+  };
+
+  const ayncLoadRoutes = async () => {
+    try {
+      let userInfo = Storage.getItem('userInfo') || {};
+      if (userInfo.token) {
+        let { menuList } = await proxy.$api.getUserPermissionList();
+        let routes = Utils.generateRoutes(menuList);
+        const moudules = import.meta.glob('./*.vue');
+        routes.map((route) => {
+          route.component = moudules[`./${route.component}.vue`];
+          proxy.$router.addRoute('home', route);
+        });
+      }
+    } catch (e) {
+      console.log(e);
+    }
   };
 </script>
 

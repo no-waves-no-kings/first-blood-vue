@@ -32,17 +32,19 @@
         <div class="user-info">
           <el-badge :is-dot="noticeCount > 0 ? true : false" class="notice"><i class="el-icon-bell"></i></el-badge>
           <el-dropdown @command="handleCommand">
-            <span class="el-dropdown-link">俊阳<i class="el-icon-arrow-down el-icon--right"></i> </span>
+            <span class="el-dropdown-link"
+              >{{ userInfo.userName }}<i class="el-icon-arrow-down el-icon--right"></i>
+            </span>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="email">邮箱</el-dropdown-item>
+                <el-dropdown-item command="email">邮箱:{{ userInfo.userEmail }}</el-dropdown-item>
                 <el-dropdown-item command="logout">退出</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
         </div>
       </div>
-      <div class="wrapper">
+      <div :class="['wrapper', isCollapse ? 'un-fold' : 'fold']">
         <router-view></router-view>
       </div>
     </div>
@@ -52,6 +54,7 @@
 <script>
   import TreeMenu from './Tree-Menu.vue';
   import BreadCrumb from './BreadCrumb.vue';
+  import Storage from '../utils/storage';
   export default {
     name: '首页',
     components: { BreadCrumb, TreeMenu },
@@ -61,21 +64,37 @@
         menuList: [],
         noticeCount: 0,
         activePath: this.$route.path,
+        userInfo: {},
       };
     },
     mounted() {
       this.getMenuList();
       this.getNoticeCount();
+      this.getUserInfo();
       console.log(this.$route.matched);
+      console.log(this.userInfo);
     },
     methods: {
+      getUserInfo() {
+        this.userInfo = Storage.getItem('userInfo');
+      },
       onFold() {
         this.isCollapse = !this.isCollapse;
       },
-      handleCommand(command) {},
+      handleCommand(command) {
+        switch (command) {
+          case 'logout':
+            Storage.clearItem('userInfo');
+            this.$router.push('/login');
+            break;
+        }
+      },
       async getMenuList() {
-        let menuList = await this.$api.getMenuList();
+        // let menuList = await this.$api.getMenuList();
+        let { menuList, actionList } = await this.$api.getUserPermissionList();
         this.menuList = menuList;
+        this.$store.commit('saveMenuList', menuList);
+        this.$store.commit('saveActionList', actionList);
       },
       async getNoticeCount() {
         let noticeCount = await this.$api.getNoticeCount();
@@ -100,7 +119,7 @@
       color: #fff;
       display: flex;
       flex-direction: column;
-      transition: width 0.5s;
+      transition: width 0.2s;
       .menu-header {
         display: flex;
         flex-direction: row;
@@ -175,9 +194,15 @@
       .wrapper {
         background-color: #eef0f3;
         padding: 20px;
-        width: 100%;
+        //width: 100%;
         height: calc(100vh - 50px);
         //height: 100%;
+        &.un-fold {
+          width: calc(100vw - 64px);
+        }
+        &.fold {
+          width: calc(100vw - 200px);
+        }
       }
     }
   }

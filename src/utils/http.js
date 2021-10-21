@@ -6,6 +6,7 @@ import EnvConfig from '../config';
 import ExceptionCode from '../exception/exception-code';
 import { ElMessage } from 'element-plus';
 import router from '../router';
+import Storage from './storage';
 // 初始化axios
 const service = axios.create({
   baseURL: EnvConfig.baseApi,
@@ -15,9 +16,12 @@ const service = axios.create({
 // 拦截请求
 service.interceptors.request.use(
   (req) => {
-    // TODO 给header添加token
+    // 给header添加token
     if (!req.headers.Authorization) {
-      req.headers.Authorization = 'Bear token';
+      let userInfo = Storage.getItem('userInfo');
+      if (userInfo) {
+        req.headers.Authorization = 'Bearer ' + userInfo.token;
+      }
     }
     return req;
   },
@@ -34,18 +38,18 @@ service.interceptors.response.use(
     if (code === 200) {
       return data;
     } else if (code === 40001) {
-      ElMessage.error(ExceptionCode[code]);
+      // ElMessage.error(msg);
       setTimeout(() => {
         router.push('/login');
       }, 1500);
-      return Promise.reject(ExceptionCode[code]);
+      return Promise.reject(msg);
     } else {
-      ElMessage.error(ExceptionCode[code] || msg);
+      // ElMessage.error(ExceptionCode[code] || msg);
       return Promise.reject(ExceptionCode[code] || msg);
     }
   },
   (err) => {
-    ElMessage.error(ExceptionCode[9999]);
+    // ElMessage.error(ExceptionCode[9999]);
     return Promise.reject(ExceptionCode[9999]);
   },
 );
@@ -59,6 +63,7 @@ const request = (options) => {
   if (typeof options.mock != 'undefined') {
     mock = options.mock;
   }
+  console.log(EnvConfig.env.toLowerCase());
   if (EnvConfig.env.toLowerCase() === 'prod') {
     service.defaults.baseURL = EnvConfig.baseApi;
   } else {
